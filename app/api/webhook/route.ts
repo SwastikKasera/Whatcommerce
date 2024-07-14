@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
     return new Response(challenge, { status: 200 });
   } else {
-    return new Response('Forbidden', { status: 403 });
+    return new Response('whatsapp get route webhook error', { status: 403 });
   }
 }
 
