@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+const { log } = require('@logtail/next');
 
 // Replace with your actual app secret
 const APP_SECRET = process.env.WHATSAPP_APP_SECRET || '';
@@ -23,7 +24,6 @@ function verifyWebhook(req: NextRequest, body: string): boolean {
   const buf = crypto.createHmac('sha256', APP_SECRET)
     .update(body)
     .digest('hex');
-  
   return `sha256=${buf}` === signature;
 }
 
@@ -34,39 +34,19 @@ export async function GET(req: NextRequest) {
   const challenge = searchParams.get('hub.challenge');
 
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    log.info('Success: WhatsApp webhook subscription confirmed');
     return new Response(challenge, { status: 200 });
   } else {
+    log.warn('Failed: WhatsApp webhook subscription');
     return new Response('whatsapp get route webhook error', { status: 403 });
   }
 }
 
 export async function POST(req: NextRequest) {
-  interface WhatsAppWebhookBody {
-  object: string;
-  entry: Array<{
-    id: string;
-    changes: Array<{
-      value: {
-        messaging_product: string;
-        metadata: {
-          display_phone_number: string;
-          phone_number_id: string;
-        };
-        contacts: Array<{
-          profile: {
-            name: string;
-          };
-          wa_id: string;
-        }>;
-        messages: WhatsAppMessage[];
-      };
-      field: string;
-    }>;
-  }>;
-}
   const body = await req.text();
   
   if (!verifyWebhook(req, body)) {
+    log.warn("Failed: Unverified webhook");
     return new Response('Forbidden', { status: 403 });
   }
 
@@ -85,13 +65,14 @@ export async function POST(req: NextRequest) {
       }
     }
   }
-
+  log.info('Success: Webhook processed successfully')
   return NextResponse.json({ message: 'Webhook processed successfully' }, { status: 200 });
 }
 
 async function handleMessage(message: WhatsAppMessage): Promise<void> {
   // Implement your message handling logic here
   if (message.type === 'text' && message.text) {
+    log.info(`Received text message: ${message.text.body} from ${message.from}`);
     console.log(`Received text message: ${message.text.body} from ${message.from}`);
     // Respond to the message, update database, etc.
   }
