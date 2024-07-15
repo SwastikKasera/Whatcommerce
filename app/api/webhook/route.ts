@@ -34,10 +34,10 @@ export async function GET(req: NextRequest) {
   const challenge = searchParams.get('hub.challenge');
 
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-    log.info('Success: WhatsApp webhook subscription confirmed');
+    log.info('Success: whatsapp get webhook', mode, VERIFY_TOKEN);
     return new Response(challenge, { status: 200 });
   } else {
-    log.warn('Failed: WhatsApp webhook subscription');
+    log.warn('Failed: whatsapp get webhook', mode, VERIFY_TOKEN);
     return new Response('whatsapp get route webhook error', { status: 403 });
   }
 }
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   
   if (!verifyWebhook(req, body)) {
     log.warn("Failed: Unverified webhook");
-    return new Response('Forbidden', { status: 403 });
+    return new Response('Webhook Unverified', { status: 403 });
   }
 
   const webhookBody: any = JSON.parse(body);
