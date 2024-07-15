@@ -19,12 +19,19 @@ interface WhatsAppMessage {
 
 function verifyWebhook(req: NextRequest, body: string): boolean {
   const signature = req.headers.get('x-hub-signature-256');
-  if (!signature) return false;
+  if (!signature) {
+    log.warn('Signature missing from headers');
+    return false;
+  }
 
   const buf = crypto.createHmac('sha256', APP_SECRET)
     .update(body)
     .digest('hex');
-  return `sha256=${buf}` === signature;
+  const isValid = `sha256=${buf}` === signature;
+
+  log.info('Webhook verification result', { isValid, signature });
+
+  return isValid;
 }
 
 export async function GET(req: NextRequest) {
@@ -33,31 +40,44 @@ export async function GET(req: NextRequest) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
+  log.info('GET request received', { mode, token, challenge });
+
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-    log.info('Success: whatsapp get webhook', mode, VERIFY_TOKEN);
+    log.info('Success: whatsapp get webhook', { mode, token });
     return new Response(challenge, { status: 200 });
   } else {
-    log.warn('Failed: whatsapp get webhook', mode, VERIFY_TOKEN);
+    log.warn('Failed: whatsapp get webhook', { mode, token });
     return new Response('whatsapp get route webhook error', { status: 403 });
   }
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
-  
+  log.info('POST request body received', { body });
+
   if (!verifyWebhook(req, body)) {
     log.warn("Failed: Unverified webhook");
     return new Response('Webhook Unverified', { status: 403 });
   }
 
-  const webhookBody: any = JSON.parse(body);
+  let webhookBody: any;
+  try {
+    webhookBody = JSON.parse(body);
+    log.info('Webhook body parsed successfully', { webhookBody });
+  } catch (error) {
+    log.error('Failed to parse webhook body', { error });
+    return new Response('Invalid JSON', { status: 400 });
+  }
 
   if (webhookBody.object === 'whatsapp_business_account') {
+    log.info('Processing WhatsApp business account messages', { webhookBody });
     for (const entry of webhookBody.entry) {
+      log.info('Processing entry', { entry });
       for (const change of entry.changes) {
+        log.info('Processing change', { change });
         if (change.field === 'messages') {
           for (const message of change.value.messages) {
-            console.log('Received message:', message);
+            log.info('Received message', { message });
             // Handle the message here
             await handleMessage(message);
           }
@@ -65,12 +85,13 @@ export async function POST(req: NextRequest) {
       }
     }
   }
-  log.info('Success: Webhook processed successfully')
+  log.info('Success: Webhook processed successfully');
   return NextResponse.json({ message: 'Webhook processed successfully' }, { status: 200 });
 }
 
 async function handleMessage(message: WhatsAppMessage): Promise<void> {
   // Implement your message handling logic here
+  log.info('Handling message', { message });
   if (message.type === 'text' && message.text) {
     log.info(`Received text message: ${message.text.body} from ${message.from}`);
     console.log(`Received text message: ${message.text.body} from ${message.from}`);
