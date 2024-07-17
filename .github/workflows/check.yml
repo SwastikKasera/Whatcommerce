@@ -3,9 +3,9 @@ name: Check
 on:
   push:
     branches:
-      # - main
+      - main
       - master
-      - develop
+      # - develop
   pull_request:
   workflow_dispatch:
 
