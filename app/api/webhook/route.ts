@@ -1,5 +1,6 @@
+import { getChatResponse } from '@/app/utils/chatApi';
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
+// import crypto from 'crypto';
 const { log } = require('@logtail/next');
 
 // Replace with your actual app secret
@@ -17,22 +18,22 @@ interface WhatsAppMessage {
   };
 }
 
-function verifyWebhook(req: NextRequest, body: string): boolean {
-  const signature = req.headers.get('x-hub-signature-256');
-  if (!signature) {
-    log.warn('Signature missing from headers');
-    return false;
-  }
+// function verifyWebhook(req: NextRequest, body: string): boolean {
+//   const signature = req.headers.get('x-hub-signature-256');
+//   if (!signature) {
+//     log.warn('Signature missing from headers');
+//     return false;
+//   }
 
-  const buf = crypto.createHmac('sha256', APP_SECRET)
-    .update(body)
-    .digest('hex');
-  const isValid = `sha256=${buf}` === signature;
+//   const buf = crypto.createHmac('sha256', APP_SECRET)
+//     .update(body)
+//     .digest('hex');
+//   const isValid = `sha256=${buf}` === signature;
 
-  log.info('Webhook verification result', { isValid, signature });
+//   log.info('Webhook verification result', { isValid, signature });
 
-  return isValid;
-}
+//   return isValid;
+// }
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -77,7 +78,9 @@ export async function POST(req: NextRequest) {
           for (const message of change.value.messages) {
             log.info('Received message', { message });
             // Handle the message here
-            await handleMessage(message);
+            if(message.type === 'text') {
+              await handleMessage(message);
+            }
           }
         }
       }
@@ -93,7 +96,12 @@ async function handleMessage(message: WhatsAppMessage): Promise<void> {
   if (message.type === 'text' && message.text) {
     log.info(`Received text message: ${message.text.body} from ${message.from}`);
     console.log(`Received text message: ${message.text.body} from ${message.from}`);
-    // Respond to the message, update database, etc.
+    const aiResponse = await getChatResponse(message.text.body);
+    const keywords = aiResponse.keywords
+    const filter = aiResponse.filter
+    const category = aiResponse.category
+    const sendWhatsappMessage = aiResponse.action
+    
   }
   // Handle other message types as needed
 }
