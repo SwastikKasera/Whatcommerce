@@ -3,24 +3,35 @@ type Action =
   | "showProductsToCustomer"
   | "addToCart"
   | "sendQrCodeForPayment"
-  | "showMoreProductsToCustomer"
   | "noConclusionReached"
+  | "removeFromCart"
 
 
 interface ChatResponse {
-  keywords: string[],
-  filter:{
-    price:{
-        min:number,
-        max:number
-    }
+  openai: any;
+  action: Action,
+  takeAction: false,
+  keywords: [],
+  filter: {
+      price: {
+          min: 0,
+          max: 0
+      },
+      category: [],
+      attributes: {
+          size: string,
+          color: string
+      }
   },
-  category: string[],
-  attributes: {
-    size:string,
-    color:string
-  },
-  action: Action
+  products: [
+      {
+          productId: string,
+          qty: 0
+      }
+  ],
+  payment: {
+      sendQrCode: false
+  }
 }
 
 interface ChatMessage {
@@ -38,23 +49,33 @@ export async function getChatResponse(prompt: string, previousHistory: ChatMessa
     data: {
       providers: 'openai',
       text: `Customer message:${prompt}`,
-      chatbot_global_action: `Understand the user intent, just like they want to shop on ecommerce store.
-      Note: it has a field name action which have functionName, I call that function to take the next decision so choose the appropriate one and you are strictly allowed to return only JSON of a the below structure 
+      chatbot_global_action: `We are relying on you to understand the user intent and action they want to shop for products.
+      Note: it has a field name action which have functionName, I call that function to take the next decision so choose the appropriate one and you are strictly allowed to return only JSON of the below structure. If you are filling action with some value, make sure that 'takeAction' must be true.
       "{
-            keywords: string[],
-            filter:{
-                price:{
-                    min:number,
-                    max:number
-                }
+        "action": "showProductsToCustomer" or "addToCart" or "sendQrCodeForPayment" or "noConclusionReached" or "removeFromCart",
+        "takeAction": false,
+        "keywords": [],
+        "filter": {
+            "price": {
+                "min": 0,
+                "max": 0
             },
-            category: string[],
-            attributes: {
-                size:string,
-                color:string
-            },
-            action: "showProductsToCustomer" or "addToCart" or "sendQrCodeForPayment" or "showMoreProductsToCustomer" or "noConclusionReached";
-        }"`,
+            "category": [],
+            "attributes": {
+                "size": "",
+                "color": ""
+            }
+        },
+        "products": [
+            {
+                "productId": "",
+                "qty": 0
+            }
+        ],
+        "payment": {
+            "sendQrCode": false
+        }
+      }"`,
       previous_history: previousHistory,
       temperature: 0.0,
       max_tokens: 150,

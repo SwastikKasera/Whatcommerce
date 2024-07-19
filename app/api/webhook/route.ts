@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
   if (webhookBody.object === 'whatsapp_business_account') {
     log.info('Processing WhatsApp business account messages', { webhookBody });
     for (const entry of webhookBody.entry) {
+      //use entry.id to fetch details about the business and store it on redis
       log.info('Processing entry', { entry });
       for (const change of entry.changes) {
         log.info('Processing change', { change });
@@ -97,10 +98,33 @@ async function handleMessage(message: WhatsAppMessage): Promise<void> {
     log.info(`Received text message: ${message.text.body} from ${message.from}`);
     console.log(`Received text message: ${message.text.body} from ${message.from}`);
     const aiResponse = await getChatResponse(message.text.body);
+    const jsonResponse = await JSON.parse(aiResponse?.openai?.generated_text)
+    console.log("airesponse",jsonResponse);
+    
     const keywords = aiResponse.keywords
     const filter = aiResponse.filter
-    const category = aiResponse.category
-    const sendWhatsappMessage = aiResponse.action
+    const action = aiResponse.action
+
+    switch (action) {
+      case "showProductsToCustomer":
+        // showProductsToCustomer
+        break;
+      case "addToCart":
+        // addToCart
+        break;
+      case "sendQrCodeForPayment":
+        // sendQrCodeForPayment
+        break;
+      case "noConclusionReached":
+        // noConclusionReached
+        break;
+      case "removeFromCart":
+        // removeFromCart
+        break;
+    
+      default:
+        break;
+    }
     
   }
   // Handle other message types as needed
