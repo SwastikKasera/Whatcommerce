@@ -1,3 +1,4 @@
+import { ShowProductsToCustomer } from '@/app/actions/ShowProductsToCustomer';
 import { getChatResponse } from '@/app/utils/chatApi';
 import { NextRequest, NextResponse } from 'next/server';
 // import crypto from 'crypto';
@@ -98,16 +99,16 @@ async function handleMessage(message: WhatsAppMessage): Promise<void> {
     log.info(`Received text message: ${message.text.body} from ${message.from}`);
     console.log(`Received text message: ${message.text.body} from ${message.from}`);
     const aiResponse = await getChatResponse(message.text.body);
-    const jsonResponse = await JSON.parse(aiResponse?.openai?.generated_text)
+    const jsonResponse: any = await JSON.parse(aiResponse?.openai?.generated_text)
     console.log("airesponse",jsonResponse);
     
-    const keywords = aiResponse.keywords
-    const filter = aiResponse.filter
-    const action = aiResponse.action
-
+    const keywords = jsonResponse?.keywords
+    const filter = jsonResponse?.filter
+    const action = jsonResponse?.action
+    console.log("action",action)
     switch (action) {
       case "showProductsToCustomer":
-        // showProductsToCustomer
+        await ShowProductsToCustomer(keywords, filter)
         break;
       case "addToCart":
         // addToCart

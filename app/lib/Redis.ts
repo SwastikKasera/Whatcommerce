@@ -10,7 +10,7 @@ async function connectToRedis() {
   }
 }
 
-const redisAdd = async (key: string, value: string, expireTime: number) => {
+const redisAdd = async (key: string, value: string, expireTime?: number) => {
   await connectToRedis();
   return client.set(key, value, { EX: expireTime });
 };
